@@ -15,6 +15,7 @@ import random
 from selenium_stealth import stealth
 from nordvpn_switcher import initialize_VPN,rotate_VPN
 
+initialize_VPN(stored_settings=0,save=0,area_input=None,skip_settings=None)
 
 
 class Scraper():
