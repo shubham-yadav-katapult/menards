@@ -13,10 +13,6 @@ import os
 from lxml import etree
 import random
 from selenium_stealth import stealth
-from nordvpn_switcher import initialize_VPN,rotate_VPN
-
-initialize_VPN(stored_settings=0,save=0,area_input=None,skip_settings=None)
-
 
 class Scraper():
     #Initialising Scraper
@@ -54,30 +50,34 @@ class Scraper():
         self.roboCheckBoolian=True
 
     def roboCheck(self):
-        robo_xp = '//*[contains(text(),"Additional security check is required")]'
-        robo_check_element = self.driver.find_elements(By.XPATH, robo_xp)
+        while True:
+            robo_xp = '//*[contains(text(),"Additional security check is required")]'
+            robo_check_element = self.driver.find_elements(By.XPATH, robo_xp)
 
-        if len(robo_check_element) >0:
-            input("Please SOLVE PUZZLE to continue")
+            if len(robo_check_element) >0:
+                input("Please SOLVE PUZZLE to continue")
 
-        if "Incapsula incident ID" in self.driver.page_source:
-            self.driver.delete_all_cookies()
-            self.driver.get(self.link)
-            time.sleep(2)
-            self.driver.delete_all_cookies()
-            self.driver.get(self.link)
-            time.sleep(2)
+            if "Incapsula incident ID" in self.driver.page_source:
+                self.driver.delete_all_cookies()
+                self.driver.get(self.link)
+                time.sleep(2)
+                self.driver.delete_all_cookies()
+                self.driver.get(self.link)
+                time.sleep(2)
 
-        if "Incapsula incident ID" in self.driver.page_source:
-            rotate_VPN()
-            time.sleep(2)
-            self.driver.delete_all_cookies()
-            self.driver.get(self.link)
-            time.sleep(3)
-            self.roboCheckBoolian=True
+            if "Incapsula incident ID" in self.driver.page_source:
+                input("Switch to continue")
+                time.sleep(2)
+                self.driver.delete_all_cookies()
+                self.driver.get(self.link)
+                time.sleep(3)
+                self.roboCheckBoolian=True
 
-        else:
-            self.roboCheckBoolian = False
+            else:
+                self.roboCheckBoolian = False
+            
+            if self.roboCheckBoolian == False:
+                break
 
 
 
@@ -149,29 +149,55 @@ class Scraper():
                 pass
 
 
+    def get_products_from_page(self):
+        
+        xp_cat = '//*[@class="container d-print-none"]//li/a'
+        cats = self.driver.find_elements(By.XPATH,xp_cat)
+        cats = [i.get_attribute("text").strip() for i in cats]
+        cats = "/".join(cats)
+        xp = '//*[@class="row pb-variations"]/div[2]/strong'
+        self.elements = self.driver.find_elements(By.XPATH,xp)
+        product_name = [str(i.get_attribute("innerHTML").strip()) for i in self.elements]
+        with open("products.json","a") as fl1:
+            print({str(cats):[[self.page],product_name]})
+            json.dump({str(cats):product_name},fl1)
+            fl1.write("\n")
+            fl1.close()
+
+    def get_products(self,link):
+        self.driver.get("https://bot.sannysoft.com/")
+        input("Enter")
+        self.driver.get(link)
+        self.link = link
+        time.sleep(2)
+        self.roboCheck()
+        self.page = 0
+        while True:
+            self.page = self.page+1
+            self.get_products_from_page()
+            if len(self.elements) == 0:
+                with open("3rdfailed.json","a") as fl:
+                    fl.write(link+"\n")
+                break
+            try:
+                next_b_xp = '//*[@aria-label="Next Page"]'
+                next_b = self.driver.find_element(next_b_xp)
+                self.driver.execute_script("arguments[0].scrollIntoView(true);", next_b)
+                next_b.click()
+                time.sleep(5)
+                self.roboCheck()
+            except:
+                break
+
+
 
 
 
 if __name__ == "__main__":
     scraper = Scraper()
-    scraper.iterate()
 
-#103
+    #scraper.iterate()
+    df = pd.read_csv('2failed.csv')
+    for i in df.links:
+        scraper.get_products(i)
 
-
-
-#product details
-#//*[@id="searchItems"]//*[@class="search-item"]//*[@class="text-dark"]
-
-#approach1
-#//*[@class="row"][2]//*[@width="500"]
-
-#approach2
-#open all links in all rows
-#it will open duplicates but will be able to fetch required details
-#make sure link is of menards
-
-#//*[@class="w-100 p-2 col-xl-2 col-md-4 col-6 col-lg-3  d-block d-sm-block d-md-block d-lg-block d-xl-block"]|//*[@class="w-100 p-2 col-xl-2 col-md-4 col-6 col-lg-3 offset-xl-0 offset-lg-3 d-block d-sm-block d-md-block d-lg-block d-xl-block"]|//*[@class="w-100 p-2 col-md-4 col-6 col-lg-3  d-block d-sm-block d-md-block d-lg-block d-xl-block"]|//*[class="w-100 p-2 col-md-3 col-6  d-block d-sm-block d-md-block d-lg-block d-xl-block"]
-
-#layer2
-#//*[@class="position-relative dynamic-image"]
