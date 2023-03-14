@@ -12,6 +12,7 @@ import pandas as pd
 import os
 from lxml import etree
 import random
+import pickle
 from selenium_stealth import stealth
 
 class Scraper():
@@ -23,10 +24,12 @@ class Scraper():
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
         options.add_experimental_option('excludeSwitches', ['enable-logging'])
+        options.add_argument('--window-size=1920,1080')  
+
+        options.add_argument('--headless')
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_argument('--ignore-ssl-errors=yes')
         options.add_argument('--ignore-certificate-errors')
-        options.add_argument("--disable-javascript")
         options.add_argument("--disable-plugins-discovery");
         options.add_argument("--start-maximized")
         options.add_argument('--disable-extensions')
@@ -46,6 +49,7 @@ class Scraper():
 
         self.used_links = []
         self.master_list = []
+        self.product_name = []
         self.refresh_counter = 0
         self.roboCheckBoolian=True
 
@@ -93,6 +97,11 @@ class Scraper():
         df = pd.DataFrame([names,links]).T
         df.columns = ['cat','link']
         df.to_csv("initial_links.csv",index=None)
+
+    def download_cookies(self):
+        self.driver.get("https://accounts.google.com/servicelogin")
+        input("sign in")
+        pickle.dump(self.driver.get_cookies(), open("google_cookies.pkl", "wb"))
 
     def iterate(self):
         with open("lastcat.txt","r") as fl3:
@@ -158,15 +167,17 @@ class Scraper():
         xp = '//*[@class="row pb-variations"]/div[2]/strong'
         self.elements = self.driver.find_elements(By.XPATH,xp)
         product_name = [str(i.get_attribute("innerHTML").strip()) for i in self.elements]
-        with open("products.json","a") as fl1:
-            print({str(cats):[[self.page],product_name]})
-            json.dump({str(cats):product_name},fl1)
-            fl1.write("\n")
-            fl1.close()
+        #check
+        if product_name == self.product_name:
+            pass
+        else:
+            self.product_name = product_name
+            with open("products.json","a") as fl1:
+                json.dump({str(cats):{self.page:product_name}},fl1)
+                fl1.write("\n")
+                fl1.close()
 
     def get_products(self,link):
-        self.driver.get("https://bot.sannysoft.com/")
-        input("Enter")
         self.driver.get(link)
         self.link = link
         time.sleep(2)
@@ -181,12 +192,13 @@ class Scraper():
                 break
             try:
                 next_b_xp = '//*[@aria-label="Next Page"]'
-                next_b = self.driver.find_element(next_b_xp)
+                next_b = self.driver.find_element(By.XPATH,next_b_xp)
                 self.driver.execute_script("arguments[0].scrollIntoView(true);", next_b)
                 next_b.click()
                 time.sleep(5)
                 self.roboCheck()
-            except:
+            except Exception as e:
+                print(e)
                 break
 
 
@@ -195,8 +207,7 @@ class Scraper():
 
 if __name__ == "__main__":
     scraper = Scraper()
-
-    #scraper.iterate()
+    # scraper.download_cookies()
     df = pd.read_csv('2failed.csv')
     for i in df.links:
         scraper.get_products(i)

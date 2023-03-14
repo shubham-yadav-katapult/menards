@@ -26,12 +26,10 @@ class Scraper():
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_argument('--ignore-ssl-errors=yes')
         options.add_argument('--ignore-certificate-errors')
-        options.add_argument("--disable-javascript")
         options.add_argument("--disable-plugins-discovery");
         options.add_argument("--start-maximized")
         options.add_argument('--disable-extensions')
         options.add_argument('--profile-directory=Default')
-        options.add_argument("--incognito")
         options.add_argument("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36")
         self.driver = webdriver.Chrome(executable_path="./chromedriver",options=options)
         self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
